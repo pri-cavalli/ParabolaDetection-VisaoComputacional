@@ -1,0 +1,3 @@
+# DLT-VisaoComputacional
+
+O objetivo deste trabalho é obter as projeções no contexto te uma partida de futebol, usando o método DLT (Direct Linear Transformation). Para tal, considere duas imagens (maracana1.jpg e maracana2.jpg) obtidas do estádio Maracanã, usando câmeras diferentes. Considere que a origem do sistema de coordenadas do mundo é definida na intersecção da linha do gol com uma das traves verticais (parcialmente visível na imagem maracana2.jpg), que o eixo xw é paralelo à linha de fundo, o eixo yw paralelo às linhas laterais, e o eixo zw é ortogonal ao plano do campo.
