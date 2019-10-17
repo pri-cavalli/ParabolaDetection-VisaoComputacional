@@ -1,3 +1,3 @@
-# DLT-VisaoComputacional
+# ParabolaDetection-VisaoComputacional
 
-O objetivo deste trabalho é obter as projeções no contexto te uma partida de futebol, usando o método DLT (Direct Linear Transformation). Para tal, considere duas imagens (maracana1.jpg e maracana2.jpg) obtidas do estádio Maracanã, usando câmeras diferentes. Considere que a origem do sistema de coordenadas do mundo é definida na intersecção da linha do gol com uma das traves verticais (parcialmente visível na imagem maracana2.jpg), que o eixo xw é paralelo à linha de fundo, o eixo yw paralelo às linhas laterais, e o eixo zw é ortogonal ao plano do campo.
+Este trabalho visa o embelezamento de gráficos matemáticos simples escaneados. Mais precisamente, um professor desenha um esboço de uma parábola juntamente com os dois eixos cartesianos com tinta escura em uma folha de papel branco (ou quadro branco), e fotografa (ou escaneia) seu desenho. A parábola desenhada pelo pelo professor deve estar aproximadamente alinhada com o eixo y, mas no processo de captura toda imagem pode conter uma (pequena) rotação em relação ao eixo x.
