@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import math
+
+origin = []
 
 def main():
     originalImage = cv2.imread('exemplo1.jpg')
@@ -10,7 +13,7 @@ def main():
     edgeImage = getEdgeImage(grayImage)
     # imageShowWithWait("edgeImage", edgeImage)
 
-    lineImage = getLinesXYImage(originalImage, edgeImage)
+    lineImage = getAxisLinesImage(originalImage, edgeImage)
     # imageShowWithWait("lineImage", lineImage)
 
     withoutAxisImage = getImageWithoutXYAxis(edgeImage)
@@ -29,7 +32,14 @@ def getGrayImage(image):
 def getEdgeImage(image):
     return cv2.Canny(image, 100, 100)
 
-def getLinesXYImage(originalImage, edgeImage):
+def getAxisLinesImage(originalImage, edgeImage):
+    lines = getAxisLinesFromImage(originalImage, edgeImage)
+    lineX, lineY = getAxisWithMLS(lines)
+    cv2.line(originalImage, lineX[0], lineX[1], (255, 0, 0), 2)
+    cv2.line(originalImage, lineY[0], lineY[1], (255, 0, 0), 2)
+    return originalImage
+
+def getAxisLinesFromImage(originalImage, edgeImage):
     rho = 4  # distance resolution in pixels of the Hough grid
     theta = np.pi / 180  # angular resolution in radians of the Hough grid
     threshold = 5 # minimum number of votes (intersections in Hough grid cell)
@@ -41,11 +51,39 @@ def getLinesXYImage(originalImage, edgeImage):
     # Output "lines" is an array containing endpoints of detected line segments
     lines = cv2.HoughLinesP(edgeImage, rho, theta, threshold, np.array([]),
                             min_line_length, max_line_gap)
+    return lines
 
+def getAxisWithMLS(lines):
+    axisX = []
+    axisY = []
     for line in lines:
         for x1, y1, x2, y2 in line:
-            cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-    return cv2.addWeighted(originalImage, 0.8, line_image, 1, 0)
+            if ((x1 - x2)**2 > (y1 - y2)**2):
+                axisX.append(line)
+            else:
+                axisY.append(line)
+    return getPredictedLine(axisX, "x"), getPredictedLine(axisY, "y")
+
+def getPredictedLine(lines, axis):
+    X = []
+    Y = []
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            X = X + [float(x1), float(x2)]
+            Y = Y + [y1, y2]
+    X_mean = np.mean(X)
+    Y_mean = np.mean(Y)
+    num = 0
+    den = 0
+    for i in range(len(X)):
+        num += (X[i] - X_mean) * (Y[i] - Y_mean)
+        den += (X[i] - X_mean) ** 2
+    m = num / den
+    c = Y_mean - m * X_mean
+    Y_pred = m * np.asarray(X) + c
+    if (axis == "x"):
+        return [(int(min(X)), int(np.mean(Y_pred))), (int(max(X)), int(np.mean(Y_pred)))]
+    return [(int(np.mean(X)), int(min(Y_pred))), (int(np.mean(X)), int(max(Y_pred)))]
 
 def getImageWithoutXYAxis(edgeImage):
     rho = 4  # distance resolution in pixels of the Hough grid
@@ -71,7 +109,6 @@ def getParabolaImage(originalImage, edgeImage):
     threshold = 15 # minimum number of votes (intersections in Hough grid cell)
     min_line_length = 40  # minimum number of pixels making up a line
     max_line_gap = 49  # maximum gap in pixels between connectable line segments
-    line_image = np.copy(originalImage) * 0  # creating a blank to draw lines on
 
     # Run Hough on edge detected image
     # Output "lines" is an array containing endpoints of detected line segments
@@ -80,12 +117,12 @@ def getParabolaImage(originalImage, edgeImage):
 
     for line in lines:
         for x1, y1, x2, y2 in line:
-            cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    return cv2.addWeighted(originalImage, 0.8, line_image, 1, 0)
+            cv2.line(originalImage, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    return originalImage
 
 def imageShowWithWait(image, windowName):
     cv2.imshow(image, windowName)
-    cv2.waitKey(1000)
+    cv2.waitKey(8000)
 
 if __name__ == '__main__':
     main()
