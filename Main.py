@@ -2,8 +2,6 @@ import cv2
 import numpy as np
 import math
 
-origin = []
-
 def main():
     originalImage = cv2.imread('exemplo1.jpg')
 
@@ -13,13 +11,13 @@ def main():
     edgeImage = getEdgeImage(grayImage)
     # imageShowWithWait("edgeImage", edgeImage)
 
-    lineImage = getAxisLinesImage(originalImage, edgeImage)
+    lineImage, lineY = getAxisLinesImage(originalImage, edgeImage)
     # imageShowWithWait("lineImage", lineImage)
 
     withoutAxisImage = getImageWithoutXYAxis(edgeImage)
     # imageShowWithWait("withoutAxisImage", withoutAxisImage)
 
-    paraboleImage = getParabolaImage(lineImage, withoutAxisImage)
+    paraboleImage = getParabolaImage(lineImage, withoutAxisImage, lineY)
     imageShowWithWait("paraboleImage", paraboleImage)
 
 
@@ -37,7 +35,7 @@ def getAxisLinesImage(originalImage, edgeImage):
     lineX, lineY = getAxisWithMLS(lines)
     cv2.line(originalImage, lineX[0], lineX[1], (255, 0, 0), 2)
     cv2.line(originalImage, lineY[0], lineY[1], (255, 0, 0), 2)
-    return originalImage
+    return originalImage, lineY
 
 def getAxisLinesFromImage(originalImage, edgeImage):
     rho = 4  # distance resolution in pixels of the Hough grid
@@ -103,7 +101,7 @@ def getImageWithoutXYAxis(edgeImage):
             cv2.line(edgeImage, (x1, y1), (x2, y2), (0, 0, 0), 15)
     return cv2.addWeighted(edgeImage, 0.8, line_image, 1, 0)
 
-def getParabolaImage(originalImage, edgeImage):
+def getParabolaImage(originalImage, edgeImage, lineY):
     rho = 4  # distance resolution in pixels of the Hough grid
     theta = np.pi / 180  # angular resolution in radians of the Hough grid
     threshold = 15 # minimum number of votes (intersections in Hough grid cell)
@@ -114,11 +112,52 @@ def getParabolaImage(originalImage, edgeImage):
     # Output "lines" is an array containing endpoints of detected line segments
     lines = cv2.HoughLinesP(edgeImage, rho, theta, threshold, np.array([]),
                             min_line_length, max_line_gap)
-
-    for line in lines:
-        for x1, y1, x2, y2 in line:
-            cv2.line(originalImage, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    print(lineY)
+    for x1, y1, x2, y2 in lines[0]:
+        point1 = [x1, y1]
+        cv2.circle(originalImage, (x1, y1), 5, (0, 0, 255), -1)
+    for x1, y1, x2, y2 in lines[3]:
+        point2 = [x1, y1]
+        cv2.circle(originalImage, (x1, y1), 5, (0, 0, 255), -1)
+    for x1, y1, x2, y2 in lines[48]:
+        point3 = [x2, y2]
+        cv2.circle(originalImage, (x2, y2), 5, (0, 0, 255), -1)
+    a, b, c = calc_parabola_vertex(point1[0], point1[1], point2[0], point2[1], point3[0], point3[1])
+    print(point1, point2, point3)
+    points = []
+    if lineY[0][1] > lineY[1][1]:
+        max = lineY[0][1]
+        min = lineY[1][1]
+    else:
+        min = lineY[0][1]
+        max = lineY[1][1]
+    for i in range(min, max, 5):
+        x1, x2 = bhaskara(a, b, c-i)
+        points = points + [(x1, i)]
+        points = points + [(x2, i)]
+    print(a, b, c)
+    print(min)
+    print(max)
+    print(points)
+    for point in points:
+        cv2.circle(originalImage, point, 5, (0, 255, 0))
     return originalImage
+
+def bhaskara( a, b, c):
+    delta = (b ** 2) - (4 * a * c)
+    if ( delta < 0 ):
+        return (None,None)
+    x = math.sqrt( delta )
+    x1 = (-b + x) / (2 * a)
+    x2 = (-b - x) / (2 * a)
+    return (int(x1), int(x2))
+
+def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
+    denom = (x1-x2) * (x1-x3) * (x2-x3)
+    A = (x3 * (y2-y1) + x2 * (y1-y3) + x1 * (y3-y2)) / denom
+    B = (x3*x3 * (y1-y2) + x2*x2 * (y3-y1) + x1*x1 * (y2-y3)) / denom
+    C = (x2 * x3 * (x2-x3) * y1+x3 * x1 * (x3-x1) * y2+x1 * x2 * (x1-x2) * y3) / denom
+    return A, B, C
 
 def imageShowWithWait(image, windowName):
     cv2.imshow(image, windowName)
