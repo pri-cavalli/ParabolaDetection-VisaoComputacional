@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+from numpy.linalg import solve, inv
 
 def main():
     originalImage = cv2.imread('exemplo1.jpg')
@@ -17,7 +18,7 @@ def main():
     withoutAxisImage = getImageWithoutXYAxis(edgeImage)
     # imageShowWithWait("withoutAxisImage", withoutAxisImage)
 
-    paraboleImage = getParabolaImage(lineImage, withoutAxisImage, lineY)
+    paraboleImage = getParabolaImage(lineImage, withoutAxisImage)
     imageShowWithWait("paraboleImage", paraboleImage)
 
 
@@ -118,6 +119,42 @@ def getParabolaImage(originalImage, edgeImage):
             cv2.circle(originalImage, (x1, y1), 5, (0, 255, 0))
             cv2.circle(originalImage, (x2, y2), 5, (0, 255, 0))
             points += [(x1, y1), (x2, y2)]
+    A = []
+    B = []
+    for point in points:
+        x = point[0]
+        y = point[1]
+        A.append([x * x, x, 1])
+        B.append(y)
+    A = np.array(A)
+    B = np.array(B)
+    tranposeA = A.transpose()
+    X = tranposeA.dot(A)
+    C = solve(X, tranposeA.dot(B))
+
+    a, b, c = C
+    points = []
+
+    NoneType = type(None)
+    for i in range(0, 756, 5):
+        x1, x2 = bhaskara(a, b, c - i)
+        if not isinstance(x1, NoneType):
+            points = points + [(x1, i)]
+            points = points + [(x2, i)]
+    print(points)
+    for point in points:
+        cv2.circle(originalImage, point, 5, (0, 255, 252))
+    return originalImage
+
+
+def bhaskara(a, b, c):
+    delta = (b ** 2) - (4 * a * c)
+    if (delta < 0):
+        return (None, None)
+    x = math.sqrt(delta)
+    x1 = (-b + x) / (2 * a)
+    x2 = (-b - x) / (2 * a)
+    return (int(x1), int(x2))
     return originalImage
 
 def imageShowWithWait(image, windowName):
