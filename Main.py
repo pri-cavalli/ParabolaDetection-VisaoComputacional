@@ -1,10 +1,12 @@
+from typing import List, Tuple
+
 import cv2
 import numpy as np
 import math
 from numpy.linalg import solve, inv
 
 def main():
-    originalImage = cv2.imread('exemplo1.jpg')
+    originalImage = cv2.imread('exemplo2.jpg')
 
     grayImage = getGrayImage(originalImage)
     # imageShowWithWait("grayImage", grayImage)
@@ -14,37 +16,42 @@ def main():
 
     lineImage, lineY = getAxisLinesImage(originalImage, edgeImage)
     # imageShowWithWait("lineImage", lineImage)
-
+    #
     withoutAxisImage = getImageWithoutXYAxis(edgeImage)
     # imageShowWithWait("withoutAxisImage", withoutAxisImage)
-
+    #
     paraboleImage = getParabolaImage(lineImage, withoutAxisImage)
     imageShowWithWait("paraboleImage", paraboleImage)
-
+    cv2.waitKey(10000)
 
 def getGrayImage(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     kernel_size = 7
-    return cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    return cv2.GaussianBlur(gray, (kernel_size, kernel_size), 1)
 
 def getEdgeImage(image):
-    return cv2.Canny(image, 100, 100)
+    return cv2.threshold(image, 143, 255, cv2.THRESH_BINARY_INV)[1]
 
 def getAxisLinesImage(originalImage, edgeImage):
-    lines = getAxisLinesFromImage(originalImage, edgeImage)
-    lineX, lineY = getAxisWithMLS(lines)
+    lineX, lineY = getAxisXY(edgeImage, originalImage)
     cv2.line(originalImage, lineX[0], lineX[1], (255, 0, 0), 2)
     cv2.line(originalImage, lineY[0], lineY[1], (255, 0, 0), 2)
     return originalImage, lineY
 
-def getAxisLinesFromImage(originalImage, edgeImage):
+
+def getAxisXY(edgeImage, originalImage):
+    lines = getAxisLinesFromImage(edgeImage)
+    lineX, lineY = getAxisWithMLS(lines, originalImage)
+    return lineX, lineY
+
+
+def getAxisLinesFromImage(edgeImage):
     rho = 4  # distance resolution in pixels of the Hough grid
     theta = np.pi / 180  # angular resolution in radians of the Hough grid
-    threshold = 5 # minimum number of votes (intersections in Hough grid cell)
+    threshold = 1 # minimum number of votes (intersections in Hough grid cell)
     min_line_length = 300  # minimum number of pixels making up a line
-    max_line_gap = 129  # maximum gap in pixels between connectable line segments
-    line_image = np.copy(originalImage) * 0  # creating a blank to draw lines on
+    max_line_gap = 50  # maximum gap in pixels between connectable line segments
 
     # Run Hough on edge detected image
     # Output "lines" is an array containing endpoints of detected line segments
@@ -52,7 +59,7 @@ def getAxisLinesFromImage(originalImage, edgeImage):
                             min_line_length, max_line_gap)
     return lines
 
-def getAxisWithMLS(lines):
+def getAxisWithMLS(lines, originalImage):
     axisX = []
     axisY = []
     for line in lines:
@@ -61,45 +68,34 @@ def getAxisWithMLS(lines):
                 axisX.append(line)
             else:
                 axisY.append(line)
+    # for line in axisX:
+    #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (255, 0, 0), 2)
+    # for line in axisY:
+    #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (255, 0, 255), 2)
+    # imageShowWithWait("asd",originalImage)
     return getPredictedLine(axisX, "x"), getPredictedLine(axisY, "y")
 
 def getPredictedLine(lines, axis):
-    X = []
-    Y = []
+    A = []
+    B = []
+
     for line in lines:
         for x1, y1, x2, y2 in line:
-            X = X + [float(x1), float(x2)]
-            Y = Y + [y1, y2]
-    X_mean = np.mean(X)
-    Y_mean = np.mean(Y)
-    num = 0
-    den = 0
-    for i in range(len(X)):
-        num += (X[i] - X_mean) * (Y[i] - Y_mean)
-        den += (X[i] - X_mean) ** 2
-    m = num / den
-    c = Y_mean - m * X_mean
-    Y_pred = m * np.asarray(X) + c
-    if (axis == "x"):
-        return [(int(min(X)), int(np.mean(Y_pred))), (int(max(X)), int(np.mean(Y_pred)))]
-    return [(int(np.mean(X)), int(min(Y_pred))), (int(np.mean(X)), int(max(Y_pred)))]
+            A.append([x1, 1])
+            A.append([x2, 1])
+            B.append([y1])
+            B.append([y2])
+
+    a, b = LSM(A,B)
+    return [(0, int(b[0])), (1500, int(a[0]*1500 + b[0]))]
 
 def getImageWithoutXYAxis(edgeImage):
-    rho = 4  # distance resolution in pixels of the Hough grid
-    theta = np.pi / 180  # angular resolution in radians of the Hough grid
-    threshold = 5 # minimum number of votes (intersections in Hough grid cell)
-    min_line_length = 300  # minimum number of pixels making up a line
-    max_line_gap = 129  # maximum gap in pixels between connectable line segments
     line_image = np.copy(edgeImage) * 0  # creating a blank to draw lines on
-
-    # Run Hough on edge detected image
-    # Output "lines" is an array containing endpoints of detected line segments
-    lines = cv2.HoughLinesP(edgeImage, rho, theta, threshold, np.array([]),
-                            min_line_length, max_line_gap)
-
+    lines = getAxisXY(edgeImage, np.copy(edgeImage))
+    line: List[Tuple[int, int]]
     for line in lines:
-        for x1, y1, x2, y2 in line:
-            cv2.line(edgeImage, (x1, y1), (x2, y2), (0, 0, 0), 15)
+        (x1,y1), (x2, y2) = line
+        cv2.line(edgeImage, (x1, y1), (x2, y2), (0, 0, 0), 80)
     return cv2.addWeighted(edgeImage, 0.8, line_image, 1, 0)
 
 def getParabolaImage(originalImage, edgeImage):
@@ -107,7 +103,7 @@ def getParabolaImage(originalImage, edgeImage):
     theta = np.pi / 180  # angular resolution in radians of the Hough grid
     threshold = 15 # minimum number of votes (intersections in Hough grid cell)
     min_line_length = 40  # minimum number of pixels making up a line
-    max_line_gap = 49  # maximum gap in pixels between connectable line segments
+    max_line_gap = 20  # maximum gap in pixels between connectable line segments
 
     # Run Hough on edge detected image
     # Output "lines" is an array containing endpoints of detected line segments
@@ -119,6 +115,25 @@ def getParabolaImage(originalImage, edgeImage):
             cv2.circle(originalImage, (x1, y1), 5, (0, 255, 0))
             cv2.circle(originalImage, (x2, y2), 5, (0, 255, 0))
             points += [(x1, y1), (x2, y2)]
+
+    C = solveParableLSM(points)
+
+    a, b, c = C
+    points = []
+
+    NoneType = type(None)
+    for i in range(0, 756, 1):
+        x1, x2 = bhaskara(a, b, c - i)
+        if not isinstance(x1, NoneType):
+            points = points + [(x1, i)]
+            points = points + [(x2, i)]
+    print(points)
+    for point in points:
+        cv2.circle(originalImage, point, 1, (0, 255, 252))
+    return originalImage
+
+
+def solveParableLSM(points):
     A = []
     B = []
     for point in points:
@@ -126,25 +141,17 @@ def getParabolaImage(originalImage, edgeImage):
         y = point[1]
         A.append([x * x, x, 1])
         B.append(y)
+    C = LSM(A, B)
+    return C
+
+
+def LSM(A, B):
     A = np.array(A)
     B = np.array(B)
     tranposeA = A.transpose()
     X = tranposeA.dot(A)
     C = solve(X, tranposeA.dot(B))
-
-    a, b, c = C
-    points = []
-
-    NoneType = type(None)
-    for i in range(0, 756, 5):
-        x1, x2 = bhaskara(a, b, c - i)
-        if not isinstance(x1, NoneType):
-            points = points + [(x1, i)]
-            points = points + [(x2, i)]
-    print(points)
-    for point in points:
-        cv2.circle(originalImage, point, 5, (0, 255, 252))
-    return originalImage
+    return C
 
 
 def bhaskara(a, b, c):
@@ -157,9 +164,9 @@ def bhaskara(a, b, c):
     return (int(x1), int(x2))
     return originalImage
 
-def imageShowWithWait(image, windowName):
-    cv2.imshow(image, windowName)
-    cv2.waitKey(8000)
+def imageShowWithWait(windowName, image):
+    cv2.imshow(windowName, image)
+    cv2.waitKey(100)
 
 if __name__ == '__main__':
     main()
