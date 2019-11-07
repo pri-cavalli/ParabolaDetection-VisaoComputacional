@@ -6,7 +6,7 @@ import math
 from numpy.linalg import solve, inv
 
 def main():
-    originalImage = cv2.imread('exemplo2.jpg')
+    originalImage = cv2.imread('exemplo1.jpg')
 
     grayImage = getGrayImage(originalImage)
     # imageShowWithWait("grayImage", grayImage)
@@ -121,16 +121,23 @@ def getParabolaImage(originalImage, edgeImage):
     a, b, c = C
     points = []
 
+    drawParable(a, b, c, originalImage, points)
+    return originalImage
+
+
+def drawParable(a, b, c, originalImage, points):
     NoneType = type(None)
-    for i in range(0, 756, 1):
-        x1, x2 = bhaskara(a, b, c - i)
+    for x in range(0, 1500, 1):
+        x1, x2 = bhaskara(a, b, c - x)
         if not isinstance(x1, NoneType):
-            points = points + [(x1, i)]
-            points = points + [(x2, i)]
+            points = points + [(x1, x)]
+            points = points + [(x2, x)]
+        y = a*x*x + b*x + c
+        if y > 0:
+            points = points + [(x,int((y)))]
     print(points)
     for point in points:
         cv2.circle(originalImage, point, 1, (0, 255, 252))
-    return originalImage
 
 
 def solveParableLSM(points):
