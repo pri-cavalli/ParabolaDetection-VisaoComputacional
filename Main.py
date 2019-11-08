@@ -4,9 +4,10 @@ import cv2
 import numpy as np
 import math
 from numpy.linalg import solve, inv
-
+a_x = 0
+a_y = 0
 def main():
-    originalImage = cv2.imread('exemplo1.jpg')
+    originalImage = cv2.imread('exemplo3.jpg')
 
     grayImage = getGrayImage(originalImage)
     # imageShowWithWait("grayImage", grayImage)
@@ -62,23 +63,40 @@ def getAxisLinesFromImage(edgeImage):
 def getAxisWithMLS(lines, originalImage):
     axisX = []
     axisY = []
+    maxSizeY = 0
+    maxSizeX = 0
     for line in lines:
         for x1, y1, x2, y2 in line:
             if ((x1 - x2)**2 > (y1 - y2)**2):
                 axisX.append(line)
             else:
                 axisY.append(line)
-    # for line in axisX:
+    biggestLineSize = 0
+    biggestLine = None
+    for yLine in axisY:
+        x1, y1, x2, y2 = yLine[0]
+        lineSize = sizeOfLine((x1, y1), (x2, y2))
+        if( lineSize > biggestLineSize):
+            biggestLineSize = lineSize
+            biggestLine = yLine
+    _, biggestLineY1, _, biggestLineY2 = biggestLine[0]
+    validAxisY = []
+    for yLine in axisY:
+        x1, y1, x2, y2 = yLine[0]
+        if not (math.fabs(y1 - biggestLineY1) > 100 and math.fabs(y2 - biggestLineY2) > 100 ):
+            validAxisY.append(yLine)
+    # for line in validAxisY:
     #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (255, 0, 0), 2)
-    # for line in axisY:
-    #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (255, 0, 255), 2)
+    # for line in axisX:
+    #     color = (255, 0, 0)
+    #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), color, 2)
     # imageShowWithWait("asd",originalImage)
-    return getPredictedLine(axisX, "x"), getPredictedLine(axisY, "y")
+    return getPredictedLine(axisX, "x"), getPredictedLine(validAxisY, "y")
 
 def getPredictedLine(lines, axis):
     A = []
     B = []
-
+    global a_x, a_y
     for line in lines:
         for x1, y1, x2, y2 in line:
             A.append([x1, 1])
@@ -87,6 +105,11 @@ def getPredictedLine(lines, axis):
             B.append([y2])
 
     a, b = LSM(A,B)
+    if axis == "x":
+        a_x = a
+    else:
+        a_y = a
+
     return [(0, int(b[0])), (1500, int(a[0]*1500 + b[0]))]
 
 def getImageWithoutXYAxis(edgeImage):
@@ -120,6 +143,7 @@ def getParabolaImage(originalImage, edgeImage):
 
     a, b, c = C
     points = []
+    print(a," * x^2 + (", b, " * x) + (", c, ")" )
 
     drawParable(a, b, c, originalImage, points)
     return originalImage
@@ -135,17 +159,21 @@ def drawParable(a, b, c, originalImage, points):
         y = a*x*x + b*x + c
         if y > 0:
             points = points + [(x,int((y)))]
-    print(points)
-    for point in points:
+    ang = np.arctan(a_x)
+    for x, y in points:
+        x, y = rotate(x, y, ang)
+        point = (int(x), int(y))
         cv2.circle(originalImage, point, 1, (0, 255, 252))
 
 
 def solveParableLSM(points):
     A = []
     B = []
+    ang = np.arctan(a_x)
     for point in points:
         x = point[0]
         y = point[1]
+        x, y = rotate(x, y, -ang)
         A.append([x * x, x, 1])
         B.append(y)
     C = LSM(A, B)
@@ -169,7 +197,18 @@ def bhaskara(a, b, c):
     x1 = (-b + x) / (2 * a)
     x2 = (-b - x) / (2 * a)
     return (int(x1), int(x2))
-    return originalImage
+
+def rotate(x, y, rad):
+    xx = math.cos(rad) * x - math.sin(rad) * y
+    yy = math.sin(rad) * x + math.cos(rad) * y
+    return (xx, yy)
+
+def sizeOfLine(p1,p2):
+    x1,y1 = p1
+    x2,y2 = p2
+    deltaX = (x1 - x2) * (x1 - x2)
+    deltaY = (y1 - y2) * (y1 - y2)
+    return math.sqrt(deltaX + deltaY)
 
 def imageShowWithWait(windowName, image):
     cv2.imshow(windowName, image)
