@@ -7,7 +7,7 @@ from numpy.linalg import solve, inv
 a_x = 0
 a_y = 0
 def main():
-    originalImage = cv2.imread('exemplo3.jpg')
+    originalImage = cv2.imread('exemplo1.jpg')
 
     grayImage = getGrayImage(originalImage)
     # imageShowWithWait("grayImage", grayImage)
@@ -63,8 +63,6 @@ def getAxisLinesFromImage(edgeImage):
 def getAxisWithMLS(lines, originalImage):
     axisX = []
     axisY = []
-    maxSizeY = 0
-    maxSizeX = 0
     for line in lines:
         for x1, y1, x2, y2 in line:
             if ((x1 - x2)**2 > (y1 - y2)**2):
@@ -85,15 +83,34 @@ def getAxisWithMLS(lines, originalImage):
         x1, y1, x2, y2 = yLine[0]
         if not (math.fabs(y1 - biggestLineY1) > 100 and math.fabs(y2 - biggestLineY2) > 100 ):
             validAxisY.append(yLine)
-    # for line in validAxisY:
-    #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (255, 0, 0), 2)
-    # for line in axisX:
-    #     color = (255, 0, 0)
-    #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), color, 2)
-    # imageShowWithWait("asd",originalImage)
-    lineX =  getPredictedLine(axisX, "x")
-    lineY = getPredictedLine(validAxisY, "y")
+
+    a_x, b_x =  getPredictedLine(axisX, "x")
+    a_y, b_y = getPredictedLine(validAxisY, "y")
+
+    xOrigin = ((b_y - b_x) / (a_x - a_y))
+    yOrigin = a_x * xOrigin + b_x
+
+    angleX = np.arctan(a_x)
+    angleY = angleX + np.pi/2
+    a_y = np.tan(angleY)
+    b_y = yOrigin - a_y * xOrigin
+
+    lineX = [(0, int(b_x)), (1500, int(a_x * 1500 + b_x))]
+    lineY = [(0, int(b_y)), (1500, int(a_y * 1500 + b_y))]
     return lineX, lineY
+
+
+def rotateLine(deltaAngle, lineX):
+    p1, p2 = lineX
+    x1, y1 = p1
+    x1, y1 = rotate(x1, y1, deltaAngle)
+    p1 = (int(x1), int(y1))
+    x2, y2 = p2
+    x2, y2 = rotate(x2, y2, deltaAngle)
+    p2 = (int(x2), int(y2))
+    lineX = [p1, p2]
+    return lineX
+
 
 def getPredictedLine(lines, axis):
     A = []
@@ -111,8 +128,7 @@ def getPredictedLine(lines, axis):
         a_x = a
     else:
         a_y = a
-
-    return [(0, int(b[0])), (1500, int(a[0]*1500 + b[0]))]
+    return a,b
 
 def getImageWithoutXYAxis(edgeImage):
     line_image = np.copy(edgeImage) * 0  # creating a blank to draw lines on
@@ -137,8 +153,8 @@ def getParabolaImage(originalImage, edgeImage):
     points = []
     for line in lines:
         for x1, y1, x2, y2 in line:
-            cv2.circle(originalImage, (x1, y1), 5, (0, 255, 0))
-            cv2.circle(originalImage, (x2, y2), 5, (0, 255, 0))
+            # cv2.circle(originalImage, (x1, y1), 5, (0, 255, 0))
+            # cv2.circle(originalImage, (x2, y2), 5, (0, 255, 0))
             points += [(x1, y1), (x2, y2)]
 
     C = solveParableLSM(points)
