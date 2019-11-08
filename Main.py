@@ -23,7 +23,7 @@ def main():
     #
     paraboleImage = getParabolaImage(lineImage, withoutAxisImage)
     imageShowWithWait("paraboleImage", paraboleImage)
-    cv2.waitKey(10000)
+    cv2.waitKey(100000)
 
 def getGrayImage(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -91,7 +91,9 @@ def getAxisWithMLS(lines, originalImage):
     #     color = (255, 0, 0)
     #     cv2.line(originalImage, (line[0][0], line[0][1]), (line[0][2], line[0][3]), color, 2)
     # imageShowWithWait("asd",originalImage)
-    return getPredictedLine(axisX, "x"), getPredictedLine(validAxisY, "y")
+    lineX =  getPredictedLine(axisX, "x")
+    lineY = getPredictedLine(validAxisY, "y")
+    return lineX, lineY
 
 def getPredictedLine(lines, axis):
     A = []
@@ -143,7 +145,7 @@ def getParabolaImage(originalImage, edgeImage):
 
     a, b, c = C
     points = []
-    print(a," * x^2 + (", b, " * x) + (", c, ")" )
+    print(-a," * x^2 + (", -b, " * x) + (", -c, ")" )
 
     drawParable(a, b, c, originalImage, points)
     return originalImage
