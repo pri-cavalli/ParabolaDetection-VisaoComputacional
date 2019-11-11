@@ -18,12 +18,12 @@
 \maketitle
 
 \section{Introdução}
-    A partir de uma imagem com linhas que representavam os eixos \(X\) e \(Y\) de um plano cartesiano e uma parábola precisava a plotar essas linhas novamente, garantindo que os eixos eram perpendiculares e garantindo que a parábola seguisse uma equação de segundo grau. Para isso, precisou seguir esses passos:
+    A partir de uma imagem com linhas que representavam os eixos \(X\) e \(Y\) de um plano cartesiano e uma parábola precisava plotar essas linhas novamente, garantindo que os eixos eram perpendiculares e que a parábola seguisse uma equação de segundo grau. Para isso, precisou seguir esses passos:
    \begin{itemize}
        \item Extrair uma imagem de bordas
        \item Identificar os eixos \(X\) e \(Y\)
        \item Remover os eixos
-       \item Forçar eixos perpendiculares 
+       \item Forçar eixos perpendiculares
        \item Identificar a parábola
        \item Desenhar a parábola
    \end{itemize}
@@ -45,16 +45,19 @@
    Usou-se Hough para identificar todas linhas que atendiam aos critérios de:
    \begin{itemize}
        \item    Tamanho mínimo de 300 pixels
-       \item    Gap máximo de 50 de gap 
+       \item    Gap máximo de 50 de gap
    \end{itemize}
+
+
    Então, identificou-se que as linhas eram eixo \(X\) quando a diferença entre seus 2 pontos era maior no \(x\) do que no \(y\), ou seja, \((x_1 - x_2)^2 > (y_1 - y_2) ^2\), caso contrário, a linha representava o eixo \(Y\).
-  Foi usado minimos quadráticos para determinar a reta que passava pelos extremidades das linhas do eixo \(X\) para ser a reta do eixo \(X\) e para o eixo \(Y\) se pegou todas linhas que estavam próximas a maior linha de todas que foram classificadas do eixo \(Y\) e se utilizou minimos quadráticos para determinar a reta do eixo \(Y\), foi utilizada essa estratégia pois em alguns casos partes da parábola eram reconhecidas como sendo do eixo Y.
- 
+
+  Para determinar a reta do eixo \(X\), foi usado mínimos quadráticos em todas as linhas identificadas como eixo \(X\). Já para determinar o eixo \(Y\), se calculou mínimos quadráticos apenas para as linhas que estavam próximas a maior linha de todas que foram classificadas como eixo \(Y\), porque em alguns casos partes da parábola eram reconhecidas como sendo do eixo Y.
+
  \subsection{Forçar eixos perpendiculares}
-   Com esses retas se determinou a origem do sistema. E utilizamos a reta \(X\) como base para se calcular a reta \(Y\), pegando uma reta perpendicular a \(X\) e que passase pela origem do sistema assim se teve a reta \(Y\)
-   
+   Com esses retas se determinou a origem do sistema. Para garantir que as duas fossem perpendiculares, recalculamos a reta \(Y\) a partir da reta \(X\), ou seja, foi pego a reta perpendicular à \(X\) e que passasse pela origem do sistema.
+
    \subsection{Remover os eixos}
-   Utilizou as retas dos eixo perpendiculares e foi removido todos os pixels que estivessem a pelo menos 80 pixels de distância
+   Simplesmente foram desenhadas duas linhas (eixos \(Y\) e \(X\)) pretas com 80 pixels de largura na imagem de borda. Dessa forma, a remoção foi feita com sucesso. Precisou de uma largura alta para remover também as setas dos eixos que haviam nos exemplos 2 e 3.
    \begin{figure}[h!]
    \centering
     \subfigure
@@ -69,24 +72,32 @@
 \subsection{Identificar a parábola}
 
     \subsubsection{Identificação dos pontos}
-    Foi utilizado Hough para descobrir pequenas linhas que representariam os pontos dentro da parabola.
+    Foi utilizado Hough para descobrir as linhas que restaram na imagem de borda, elas representariam os pontos da parábola.
     \subsubsection{Rotação dos pontos para o eixo \(XY\)}
     Usando a reta do eixo \(X\) como base, pegou o ângulo de inclinação dela, e todos pontos foram rotacionados para o eixo \(XY\), utilizando a matriz de rotação.
     \subsubsection{Cálculo da parábola}
-    Utilizando mínimos quadráticos com todos os pontos identificados se descobriu a parábola que passasse por eles e que se encaixasse na formulação \(ax^2 + bx + c = y\).
+    Utilizando mínimos quadráticos com todos os pontos identificados, se descobriu a reta que passava por eles e que se encaixava na formulação \(ax^2 + bx + c = y\). Assim, as fórmulas encontradas foram:
+   \begin{itemize}
+       \item Exemplo 1:  \(0.012738032728286611x^2 -14.306023483438787x+3379.402403060674\)
+       \item Exemplo 2: \(-0.009408904344677725x^2+0.8471882774263138x-370.63164958619126\)
+       \item Exemplo3:  \(0.0053864534731346584x^2-3.3019702464629828x-190.78819962397876\)
+   \end{itemize}
+
+
+
 
 \subsection{Desenhar a parábola}
 
-Para desenhar a párabola se pegou os pontos de acordo com a equação e rotacionou de volta pela matriz de rotação para o plano do da imagem e desenhou os seus pontos nela.
+Se calculou os pontos de acordo com a equação da parábola e os rotacionou sentido contrário a sessão anterior, dessa forma, o ponto que estava no plano cartesiano foi encontrado no plano da imagem. Então, se desenhou um circulo para cada ponto, como eram muito próximos, representou a reta da parábola perfeitamente.
 
 \begin{figure}[h!]
    \centering
     \subfigure
-        {\includegraphics[scale=0.1]{exemplo1ParaboleImage.jpg}}
+        {\includegraphics[scale=0.2]{exemplo1ParaboleImage.jpg}}
     \subfigure
-        {\includegraphics[scale=0.1]{exemplo2ParaboleImage.jpg}}
+        {\includegraphics[scale=0.2]{exemplo2ParaboleImage.jpg}}
     \subfigure
-        {\includegraphics[scale=0.1]{exemplo3ParaboleImage.jpg}}
+        {\includegraphics[scale=0.2]{exemplo3ParaboleImage.jpg}}
     \caption{Resultado do trabalho }
 \end{figure}
     
